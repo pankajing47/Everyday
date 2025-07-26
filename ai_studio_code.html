@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Tap Tap Coin</title>
+    
+    <!-- Monetag Ad SDK -->
+    <script 
+        src='//libtl.com/sdk.js' 
+        data-zone='9623466' 
+        data-sdk='show_9623466'
+        onerror="handleScriptError()">
+    </script>
+
+    <style>
+        /* CSS कोड */
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;700&display=swap');
+        :root { --primary-color: #6a35a1; --secondary-color: #F1C40F; --background-color: #f0e6ff; --text-color: #333; --white: #ffffff; --disabled-color: #bca0dc; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--background-color); color: var(--text-color); margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; overflow-y: auto; }
+        .app-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; padding: 20px 15px; box-sizing: border-box; gap: 20px; }
+        .points-counter { background-color: var(--white); border: 3px solid var(--primary-color); border-radius: 50px; padding: 10px 25px; font-size: 2.2em; font-weight: 700; color: var(--primary-color); box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-family: 'Fredoka One', cursive; }
+        .tapper-container { position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .tapper-image { width: 200px; height: 200px; border-radius: 50%; background: url('https://res.cloudinary.com/dtjjgiitl/image/upload/q_auto:good,f_auto,fl_progressive/v1753450222/p34qrcytxja997gq4pcw.jpg') no-repeat center center; background-size: cover; border: 8px solid var(--white); box-shadow: 0 5px 20px rgba(0,0,0,0.2); transition: transform 0.1s ease; }
+        .tapper-image:active { transform: scale(0.93); }
+        .floating-text { position: absolute; top: 40%; left: 50%; font-family: 'Fredoka One', cursive; color: var(--primary-color); font-size: 2em; opacity: 1; pointer-events: none; animation: floatUp 1s ease-out forwards; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); transform: translateX(-50%); }
+        @keyframes floatUp { to { transform: translate(-50%, -80px); opacity: 0; } }
+        .tasks-container, .footer { width: 100%; }
+        .tasks-container { display: flex; flex-direction: column; gap: 10px; }
+        .task-btn, .withdraw-btn { font-family: 'Fredoka One', cursive; border: none; border-radius: 12px; padding: 15px; cursor: pointer; width: 100%; transition: all 0.1s ease-in-out; text-align: center; }
+        .task-btn { background-color: var(--primary-color); color: var(--white); font-size: 1.2em; box-shadow: 0 4px 0 #4c2572; }
+        .task-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #4c2572; }
+        .task-btn:disabled { background-color: var(--disabled-color); box-shadow: 0 4px 0 #9d82bb; cursor: not-allowed; }
+        .withdraw-btn { background-color: var(--secondary-color); color: var(--text-color); font-size: 1.5em; box-shadow: 0 5px 0 #c0980b; }
+        .withdraw-btn:active { transform: translateY(5px); box-shadow: 0 0 0 #c0980b; }
+        .withdraw-btn:disabled { background-color: #f7e08b; color: #a8a8a8; box-shadow: 0 5px 0 #d6c075; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header><div id="points-display" class="points-counter">0</div></header>
+        <main id="tapper-container" class="tapper-container">
+            <div id="tapper-image" class="tapper-image"></div>
+        </main>
+        <section class="tasks-container">
+            <button id="task-telegram" class="task-btn">Join Telegram (+1000 Coins)</button>
+            <button id="task-youtube" class="task-btn">Subscribe YouTube (+1000 Coins)</button>
+            <button id="task-daily" class="task-btn">Daily Task (+200 Coins)</button>
+        </section>
+        <footer class="footer">
+            <button id="withdraw-button" class="withdraw-btn">Withdraw</button>
+        </footer>
+    </div>
+
+    <script>
+        // यह फ़ंक्शन तब चलेगा जब sdk.js फ़ाइल लोड नहीं होगी
+        function handleScriptError() {
+            console.error("CRITICAL: sdk.js script failed to load. It was likely blocked.");
+            alert("SCRIPT LOAD FAILED! The ad script is being blocked. Please disable Ad Blocker.");
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const tapperContainer = document.getElementById('tapper-container');
+            const tapperImage = document.getElementById('tapper-image');
+            const pointsDisplay = document.getElementById('points-display');
+            const withdrawButton = document.getElementById('withdraw-button');
+            const telegramTaskBtn = document.getElementById('task-telegram');
+            const youtubeTaskBtn = document.getElementById('task-youtube');
+            const dailyTaskBtn = document.getElementById('task-daily');
+
+            const WITHDRAW_MINIMUM = 1000000;
+            const AD_TAP_TRIGGER = 5;
+
+            // संस्करण v9
+            let userPoints = parseInt(localStorage.getItem('userTapPoints_v9') || '0', 10);
+            let telegramClaimed = localStorage.getItem('telegramClaimed_v9') === 'true';
+            let youtubeClaimed = localStorage.getItem('youtubeClaimed_v9') === 'true';
+            let lastDailyClaim = localStorage.getItem('lastDailyClaim_v9') ? parseInt(localStorage.getItem('lastDailyClaim_v9'), 10) : 0;
+            let tapCountSinceLastAd = 0;
+
+            const WITHDRAW_URL = 'https://surveyheart.com/form/6883694fc0a0d470f4f75155';
+            const TELEGRAM_URL = 'https://t.me/Everydayofficial_bot';
+            const YOUTUBE_CHANNEL_URL = 'https://youtube.com/@everyday_task_bot?si=ry2rYL-iDMVMq4U8';
+            const DAILY_VIDEO_URL = 'https://youtu.be/as8siIVHRGY?si=oZ1wR17_c5L3UOCl';
+
+            // Monetag Ad Function
+            function showAd(callback) {
+                if (typeof sdk === 'undefined' || typeof sdk.show_9623466 === 'undefined') {
+                    console.error("Ad Error: Monetag SDK is not available.");
+                    if (callback) callback();
+                    return;
+                }
+                try {
+                    sdk.show_9623466({
+                        onClose: callback,
+                        onError: callback
+                    });
+                } catch (e) {
+                    console.error("Ad Error: विज्ञापन दिखाते समय गंभीर त्रुटि हुई:", e);
+                    if (callback) callback();
+                }
+            }
+            
+            function updateAllUI() {
+                pointsDisplay.textContent = userPoints.toLocaleString();
+                withdrawButton.disabled = userPoints < WITHDRAW_MINIMUM;
+                withdrawButton.textContent = `Withdraw (${userPoints.toLocaleString()}/${WITHDRAW_MINIMUM.toLocaleString()})`;
+                telegramTaskBtn.disabled = telegramClaimed;
+                if(telegramClaimed) telegramTaskBtn.textContent = 'Telegram Joined';
+                youtubeTaskBtn.disabled = youtubeClaimed;
+                if(youtubeClaimed) youtubeTaskBtn.textContent = 'YouTube Subscribed';
+                const twentyFourHours = 24 * 60 * 60 * 1000;
+                const timeSinceLastClaim = Date.now() - lastDailyClaim;
+                dailyTaskBtn.disabled = timeSinceLastClaim < twentyFourHours;
+                dailyTaskBtn.textContent = dailyTaskBtn.disabled ? 'Daily Task Claimed' : 'Daily Task (+200 Coins)';
+            }
+
+            function handleTap() {
+                tapCountSinceLastAd++;
+                const pointsEarned = Math.floor(Math.random() * 2) + 1;
+                userPoints += pointsEarned;
+                const floatingText = document.createElement('div');
+                floatingText.textContent = `+${pointsEarned}`;
+                floatingText.className = 'floating-text';
+                tapperContainer.appendChild(floatingText);
+                floatingText.addEventListener('animationend', () => floatingText.remove());
+
+                if (tapCountSinceLastAd >= AD_TAP_TRIGGER) {
+                    showAd();
+                    tapCountSinceLastAd = 0;
+                }
+
+                localStorage.setItem('userTapPoints_v9', userPoints);
+                updateAllUI();
+            }
+
+            function handleWithdrawal() {
+                if (withdrawButton.disabled) return;
+                const confirmation = confirm(`Your request will be submitted and your ${userPoints.toLocaleString()} coins will be reset to 0. Do you want to continue?`);
+                if (confirmation) {
+                    userPoints = 0;
+                    localStorage.setItem('userTapPoints_v9', userPoints);
+                    updateAllUI();
+                    window.open(WITHDRAW_URL, '_blank');
+                }
+            }
+            
+            function claimReward(type) {
+                let claimed, amount, url;
+                if (type === 'telegram' && !telegramClaimed) {
+                    claimed = 'telegramClaimed_v9'; amount = 1000; url = TELEGRAM_URL; telegramClaimed = true;
+                } else if (type === 'youtube' && !youtubeClaimed) {
+                    claimed = 'youtubeClaimed_v9'; amount = 1000; url = YOUTUBE_CHANNEL_URL; youtubeClaimed = true;
+                } else if (type === 'daily' && !dailyTaskBtn.disabled) {
+                    amount = 200; lastDailyClaim = Date.now(); localStorage.setItem('lastDailyClaim_v9', lastDailyClaim); url = DAILY_VIDEO_URL;
+                } else { return; }
+                userPoints += amount;
+                localStorage.setItem('userTapPoints_v9', userPoints);
+                if (claimed) localStorage.setItem(claimed, 'true');
+                updateAllUI();
+                showAd(() => {
+                    window.open(url, '_blank');
+                });
+            }
+
+            function initialize() {
+                updateAllUI();
+                tapperImage.addEventListener('click', handleTap);
+                withdrawButton.addEventListener('click', handleWithdrawal);
+                telegramTaskBtn.addEventListener('click', () => claimReward('telegram'));
+                youtubeTaskBtn.addEventListener('click', () => claimReward('youtube'));
+                dailyTaskBtn.addEventListener('click', () => claimReward('daily'));
+                console.log("App Initialized. Ready to tap!");
+            }
+            
+            initialize();
+        });
+    </script>
+</body>
+</html>
