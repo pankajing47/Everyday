@@ -14,7 +14,6 @@
     </script>
 
     <style>
-        /* CSS कोड */
         @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;700&display=swap');
         :root { --primary-color: #6a35a1; --secondary-color: #F1C40F; --background-color: #f0e6ff; --text-color: #333; --white: #ffffff; --disabled-color: #bca0dc; }
         body { font-family: 'Inter', sans-serif; background-color: var(--background-color); color: var(--text-color); margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; overflow-y: auto; }
@@ -53,7 +52,6 @@
     </div>
 
     <script>
-        // यह फ़ंक्शन तब चलेगा जब sdk.js फ़ाइल लोड नहीं होगी
         function handleScriptError() {
             console.error("CRITICAL: sdk.js script failed to load. It was likely blocked.");
             alert("SCRIPT LOAD FAILED! The ad script is being blocked. Please disable Ad Blocker.");
@@ -71,7 +69,6 @@
             const WITHDRAW_MINIMUM = 1000000;
             const AD_TAP_TRIGGER = 5;
 
-            // संस्करण v9
             let userPoints = parseInt(localStorage.getItem('userTapPoints_v9') || '0', 10);
             let telegramClaimed = localStorage.getItem('telegramClaimed_v9') === 'true';
             let youtubeClaimed = localStorage.getItem('youtubeClaimed_v9') === 'true';
@@ -83,7 +80,6 @@
             const YOUTUBE_CHANNEL_URL = 'https://youtube.com/@everyday_task_bot?si=ry2rYL-iDMVMq4U8';
             const DAILY_VIDEO_URL = 'https://youtu.be/as8siIVHRGY?si=oZ1wR17_c5L3UOCl';
 
-            // Monetag Ad Function
             function showAd(callback) {
                 if (typeof sdk === 'undefined' || typeof sdk.show_9623466 === 'undefined') {
                     console.error("Ad Error: Monetag SDK is not available.");
@@ -91,12 +87,9 @@
                     return;
                 }
                 try {
-                    sdk.show_9623466({
-                        onClose: callback,
-                        onError: callback
-                    });
+                    sdk.show_9623466({ onClose: callback, onError: callback });
                 } catch (e) {
-                    console.error("Ad Error: विज्ञापन दिखाते समय गंभीर त्रुटि हुई:", e);
+                    console.error("Ad Error:", e);
                     if (callback) callback();
                 }
             }
@@ -124,12 +117,10 @@
                 floatingText.className = 'floating-text';
                 tapperContainer.appendChild(floatingText);
                 floatingText.addEventListener('animationend', () => floatingText.remove());
-
                 if (tapCountSinceLastAd >= AD_TAP_TRIGGER) {
                     showAd();
                     tapCountSinceLastAd = 0;
                 }
-
                 localStorage.setItem('userTapPoints_v9', userPoints);
                 updateAllUI();
             }
@@ -158,9 +149,7 @@
                 localStorage.setItem('userTapPoints_v9', userPoints);
                 if (claimed) localStorage.setItem(claimed, 'true');
                 updateAllUI();
-                showAd(() => {
-                    window.open(url, '_blank');
-                });
+                showAd(() => { window.open(url, '_blank'); });
             }
 
             function initialize() {
@@ -170,7 +159,6 @@
                 telegramTaskBtn.addEventListener('click', () => claimReward('telegram'));
                 youtubeTaskBtn.addEventListener('click', () => claimReward('youtube'));
                 dailyTaskBtn.addEventListener('click', () => claimReward('daily'));
-                console.log("App Initialized. Ready to tap!");
             }
             
             initialize();
